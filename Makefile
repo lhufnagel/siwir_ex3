@@ -16,4 +16,4 @@ lbm: ${OBJECTS}
 	${CXX} ${CXXFLAGS} -o $@ ${OBJECTS} ${LIBS}
 
 clean:
-	rm -f *.o *~ *.txt lbm
+	rm -f *.o *~ *.vtk lbm
