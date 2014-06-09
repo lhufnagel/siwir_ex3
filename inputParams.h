@@ -1,5 +1,13 @@
 typedef struct Input
 {
+
+	uint sizex;
+	uint sizey;
+	uint timesteps;
+	float omega;
+	std::string vtk_file;
+	uint vtk_step;
+
 	Input()
 	{
 		sizex=100;
@@ -9,13 +17,6 @@ typedef struct Input
 		vtk_file="example";
 		vtk_step=300;
 	}
-
-	uint sizex;
-	uint sizey;
-	uint timesteps;
-	float omega;
-	std::string vtk_file;
-	uint vtk_step;
 } Input;
 
 /* todo: implementieren, und dann den default konstruktor rauswerfen  */

@@ -218,12 +218,16 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		if (inp.vtk_step!=0 &&  (tStep % inp.vtk_step)==0)
+		if (inp.vtk_step!=0 &&  tStep!=0 && (tStep % inp.vtk_step)==0)
 		{
 			//todo: put in function
 
 			ofstream file; 
-			file.open(inp.vtk_file + to_string(tStep) +".vtk", ios::out);
+			string s;
+			ostringstream outStream;
+			outStream << tStep;
+			s = outStream.str();
+			file.open((inp.vtk_file + s +".vtk").c_str(), ios::out);
 			if(!(file.is_open()))
 			{ 
 				printf("konnte nicht gespeichert werden\n");
