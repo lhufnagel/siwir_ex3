@@ -65,10 +65,12 @@ int main(int argc, char* argv[])
 		}
 	}
 
+/*
 	for (uint x=0; x < inp.sizex+2; x++)
 	{
 		velField(x,inp.sizey+1,X)=uw;
 	}
+*/
 
 
 	for (uint tStep = 0; tStep<inp.timesteps; ++tStep)
@@ -135,7 +137,7 @@ int main(int argc, char* argv[])
 		dst(1,1,NE)=dst(0,0,SW);
 		dst(inp.sizex,1,NW)=dst(inp.sizex+1,0,SE);
 		dst(inp.sizex,inp.sizey,SW)=dst(inp.sizex+1,inp.sizey+1,NE)-1./6.*uw;
-		dst(1,inp.sizey,SE)=dst(0,inp.sizey+1,NW)+1./6.*uw;
+		dst(1,inp.sizey,SE)=        dst(0,inp.sizey+1,NW)+1./6.*uw;
 
 
 
@@ -147,12 +149,12 @@ int main(int argc, char* argv[])
 				//calculate macroscopic measures
 				densField(x,y)=dst(x,y,C)+
 					dst(x,y,N )+
-					dst(x,y,NE)+
 					dst(x,y,E )+
-					dst(x,y,SE)+
 					dst(x,y,S )+
-					dst(x,y,SW)+
 					dst(x,y,W )+
+					dst(x,y,NE)+
+					dst(x,y,SE)+
+					dst(x,y,SW)+
 					dst(x,y,NW);
 
 				velField(x,y,X)=((dst(x,y,NE)+
@@ -160,17 +162,39 @@ int main(int argc, char* argv[])
 							dst(x,y,SE))-
 						(dst(x,y,SW)+
 						 dst(x,y,W )+
-						 dst(x,y,NW)))
-					/densField(x,y);
+						 dst(x,y,NW)));
+					///densField(x,y);
+/*
 
+				velField(x,y,X)=(
+						(dst(x,y,NE)-
+						 dst(x,y,W ))+
+						(dst(x,y,E )-
+						dst(x,y,SW))+
+							(dst(x,y,SE)-
+						 dst(x,y,NW)));
+					///densField(x,y);
+
+*/
 				velField(x,y,Y)=((dst(x,y,N )+
 							dst(x,y,NE)+
 							dst(x,y,NW))-
 						(dst(x,y,SE)+
 						 dst(x,y,S )+
-						 dst(x,y,SW)))
-					/densField(x,y);
+						 dst(x,y,SW)));
+					///densField(x,y);
+/*
 
+				velField(x,y,Y)=(
+							(dst(x,y,N )-
+							 dst(x,y,SW))+
+							(dst(x,y,NW)-
+							 dst(x,y,S ))+
+							(dst(x,y,NE)-
+							dst(x,y,SE)))
+					///densField(x,y);
+
+*/
 
 				double rho=densField(x,y);
 				double vx=velField(x,y,X);
@@ -193,19 +217,6 @@ int main(int argc, char* argv[])
 
 			}
 		}
-
-		for (uint x=1; x < inp.sizex+1; x++)
-		{
-			for (uint y=1; y < inp.sizey+1; y++)
-			{
-
-
-
-			}
-		}
-
-
-
 
 		if (inp.vtk_step!=0 &&  (tStep % inp.vtk_step)==0)
 		{
@@ -246,7 +257,7 @@ int main(int argc, char* argv[])
 			{
 				for (uint x=1; x < inp.sizex+1; x++)
 				{
-					file << velField(x,y,Y) << " " << velField(x,y,X) << " 0" << endl;
+					file << velField(x,y,X) << " " << velField(x,y,Y) << " 0" << endl;
 				}
 			}
 			file << endl;

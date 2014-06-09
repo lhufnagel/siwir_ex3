@@ -1,11 +1,11 @@
 #define C 0
 #define N 1
-#define NE 2
+#define S 2
 #define E 3
-#define SE 4
-#define S 5
-#define SW 6
-#define W 7
+#define W 4
+#define NE 5
+#define SE 6
+#define SW 7
 #define NW 8
 
 //for velocities
