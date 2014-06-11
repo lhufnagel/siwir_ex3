@@ -1,3 +1,5 @@
+#include <cassert>
+
 namespace lbm
 {
 
@@ -52,7 +54,7 @@ namespace lbm
 		inline Type& 
 		Grid<Type,Cellsize>::operator()( uint x, uint y, uint f )
 		{
-			//assert( x < xsize_ && y < ysize_ && f < Cellsize );
+			assert( x < xsize_ && y < ysize_ && f < Cellsize );
 			return data_[y*xsize_*Cellsize+x*Cellsize+f];
 		}
 
@@ -61,7 +63,7 @@ namespace lbm
 		inline Type 
 		Grid<Type,Cellsize>::operator()( uint x, uint y, uint f ) const
 		{
-			//assert( x < xsize_ && y < ysize_ && f < Cellsize );
+			assert( x < xsize_ && y < ysize_ && f < Cellsize );
 			return data_[y*xsize_*Cellsize+x*Cellsize+f];
 		}
 
@@ -110,7 +112,7 @@ namespace lbm
 		inline Type& 
 		Grid<Type,1>::operator()( uint x, uint y)
 		{
-			//assert( x < xsize_ && y < ysize_ );
+			assert( x < xsize_ && y < ysize_ );
 			return data_[y*xsize_+x];
 		}
 
@@ -119,7 +121,7 @@ namespace lbm
 		inline Type 
 		Grid<Type,1>::operator()( uint x, uint y ) const
 		{
-			//assert( x < xsize_ && y < ysize_ );
+			assert( x < xsize_ && y < ysize_ );
 			return data_[y*xsize_+x];
 		}
 
