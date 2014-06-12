@@ -15,7 +15,7 @@ typedef struct Input
 		timesteps=8000;
 		omega=1.9;
 		vtk_file="example";
-		vtk_step=15;
+		vtk_step=150;
 	}
 } Input;
 

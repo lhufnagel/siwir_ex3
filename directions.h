@@ -1,5 +1,5 @@
 //2q9 it is
-static const int stencilSize = 9;
+static const unsigned int stencilSize = 9;
 
 //stencil indices; keep the ordering intact!!
 #define C  0
