@@ -1,5 +1,7 @@
 #include "main.h"
+#include <cstdio>
 #include "grid.h"
+#include "pgm.h"
 #include "flags.h"
 #include "directions.h"
 #include "inputParams.h"
@@ -24,6 +26,31 @@ int main(int argc, char* argv[])
 		}
 		*/
 
+
+	pgm_init(&argc,argv);
+	int rows, cols;
+	gray** refrVals = NULL;
+	gray maxValref = 255;
+	int format;
+
+	FILE* refrFile;
+	if ((refrFile = fopen("./test.pgm","r")) == NULL)
+	{
+		cerr << "fopen(): " << argv[3] << endl;
+		return EXIT_FAILURE;
+	}
+
+	pgm_readpgminit(refrFile,&cols,&rows,&maxValref,&format);
+
+	refrVals = pgm_allocarray( cols,  rows );
+
+	//PGMs horizontal gespiegelt einlesen, damit wir unseren koordinatenursprung unten links (statt oben rehchts)  haben
+	for (int y=rows-1;y>=0;y--){
+		pgm_readpgmrow( refrFile, refrVals[y], cols, maxValref, format );
+	}
+	inp.sizex = cols;
+	inp.sizey = rows;
+
 	PDF_Field src(inp.sizex+2,inp.sizey+2),
 				 dst(inp.sizex+2,inp.sizey+2);
 	V_Field velField(inp.sizex+2,inp.sizey+2);
@@ -37,14 +64,22 @@ int main(int argc, char* argv[])
 	{
 		for (uint y=0; y < inp.sizey+2; y++)
 		{
-			flagField(x,y)= FLUID;
+			flagField(x,y)= NOSLIP;
 
-			velField(x,y,X)=velField(x,y,Y)=0.;
+			if (x>0 && y>0 &&
+					x<inp.sizex+1 && y<inp.sizey+1 &&
+					refrVals[y-1][x-1] == maxValref)
+			{
+				flagField(x,y)= FLUID;
 
-			densField(x,y)=1.;
+				velField(x,y,X)=velField(x,y,Y)=0.;
+
+				densField(x,y)=1.;
+			}
 
 			for (int i=0;i<stencilSize;i++)
 				src(x,y,i) = dst(x,y,i) = weigths[i];
+
 		}
 	}
 
@@ -77,49 +112,49 @@ int main(int argc, char* argv[])
 		}
 
 
-	//handle boundary
-	//don't use uints here ;)!
-	for (int x=0; x < inp.sizex+2; x++)
-	{
-
-		for (int y=0; y < inp.sizey+2; y++)
+		//handle boundary
+		//don't use uints here ;)!
+		for (int x=0; x < inp.sizex+2; x++)
 		{
-			if (flagField(x,y) == NOSLIP)
+
+			for (int y=0; y < inp.sizey+2; y++)
 			{
-				for (uint i=1;i<stencilSize;i++)
+				if (flagField(x,y) == NOSLIP)
 				{
-					
-					if (
-						(x + stenNbs[X][i]) > -1 &&
-						(x + stenNbs[X][i]) < (inp.sizex+2) &&
-						(y + stenNbs[Y][i]) > -1 &&
-						(y + stenNbs[Y][i]) < (inp.sizey+2) &&
-						(flagField(x + stenNbs[X][i], y + stenNbs[Y][i]) == FLUID))
+					for (uint i=1;i<stencilSize;i++)
 					{
-						dst(x + stenNbs[X][i], y + stenNbs[Y][i],i) = dst(x,y,(i+3)%8+1);
+
+						if (
+								(x + stenNbs[X][i]) > -1 &&
+								(x + stenNbs[X][i]) < (inp.sizex+2) &&
+								(y + stenNbs[Y][i]) > -1 &&
+								(y + stenNbs[Y][i]) < (inp.sizey+2) &&
+								(flagField(x + stenNbs[X][i], y + stenNbs[Y][i]) == FLUID))
+						{
+							dst(x + stenNbs[X][i], y + stenNbs[Y][i],i) = dst(x,y,(i+3)%8+1);
+						}
 					}
+
+				}
+				else if (flagField(x,y) == MOVNOSLIP)
+				{
+					for (uint i=1;i<stencilSize;i++)
+					{
+						if (	(x + stenNbs[X][i])> -1 &&
+								(x + stenNbs[X][i])< (inp.sizex+2) &&
+								(y + stenNbs[Y][i])> -1 &&
+								(y + stenNbs[Y][i])< (inp.sizey+2) &&
+								(flagField(x + stenNbs[X][i], y + stenNbs[Y][i]) == FLUID))
+						{
+							//plus sign to compensate for the scalarproduct
+							dst(x + stenNbs[X][i], y + stenNbs[Y][i] ,i) = dst(x,y,(i+3)%8+1) + 6.*weigths[i]*(stenNbs[X][i]*uw[X]+stenNbs[Y][i]*uw[Y]);
+						}
+					}
+
 				}
 
 			}
-			else if (flagField(x,y) == MOVNOSLIP)
-			{
-				for (uint i=1;i<stencilSize;i++)
-				{
-					if (	(x + stenNbs[X][i])> -1 &&
-						(x + stenNbs[X][i])< (inp.sizex+2) &&
-						(y + stenNbs[Y][i])> -1 &&
-						(y + stenNbs[Y][i])< (inp.sizey+2) &&
-					(flagField(x + stenNbs[X][i], y + stenNbs[Y][i]) == FLUID))
-					{
-						                                        									//plus sign to compensate for the scalarproduct
-						dst(x + stenNbs[X][i], y + stenNbs[Y][i] ,i) = dst(x,y,(i+3)%8+1) + 6.*weigths[i]*(stenNbs[X][i]*uw[X]+stenNbs[Y][i]*uw[Y]);
-					}
-				}
-
-			}
-
 		}
-	}
 
 
 		//collide it
@@ -152,9 +187,9 @@ int main(int argc, char* argv[])
 				//seems like we should not divide by the density here...
 				//otherwise the algorithm gets instable
 				/*
-				velField(x,y,X)/=densField(x,y);
-				velField(x,y,Y)/=densField(x,y);
-				*/
+					velField(x,y,X)/=densField(x,y);
+					velField(x,y,Y)/=densField(x,y);
+					*/
 
 				double rho=densField(x,y);
 				double vx=velField(x,y,X);
