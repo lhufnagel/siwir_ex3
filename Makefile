@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS ?= -O3 -ansi -Wall -pedantic #-pg  -O3 #-fopenmp -Winline
+CXXFLAGS ?= -O3 -ansi -Wall -pedantic -fopenmp#-pg  -O3 #-fopenmp -Winline
 OBJECTS = main.o 
 LIBS = -L. -lnetpbm
 

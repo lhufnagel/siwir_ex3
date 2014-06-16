@@ -10,12 +10,12 @@ typedef struct Input
 
 	Input()
 	{
-		sizex=100;
-		sizey=100;
-		timesteps=8000;
+		sizex=50;
+		sizey=50;
+		timesteps=10000;
 		omega=1.9;
-		vtk_file="example";
-		vtk_step=150;
+		vtk_file="test";
+		vtk_step=1000;
 	}
 } Input;
 
