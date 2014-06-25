@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS ?= -O3 -ansi -Wall -pedantic -fopenmp#-pg  -O3 #-fopenmp -Winline
-OBJECTS = main.o 
+OBJECTS = io.o main.o 
 LIBS = -L. -lnetpbm
 
 .PHONY: all clean

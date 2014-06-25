@@ -1,3 +1,8 @@
+#pragma once
+#include <string>
+
+typedef unsigned int uint;
+
 typedef struct Input
 {
 
@@ -18,7 +23,4 @@ typedef struct Input
 		vtk_step=1000;
 	}
 } Input;
-
-/* todo: implementieren, und dann den default konstruktor rauswerfen  */
-//bool readInputParams(const char* argv[1],Input* inp);
 

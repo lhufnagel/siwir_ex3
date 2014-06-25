@@ -1,8 +1,11 @@
+#pragma once
 #include <cassert>
+#include <algorithm>
 
 namespace lbm
 {
 
+   typedef unsigned int uint;
 	template< typename Type, uint Cellsize >
 		class Grid
 		{

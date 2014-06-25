@@ -1,75 +1,15 @@
 #include "main.h"
 #include "grid.h"
+#include "io.h"
+#include "inputParams.h"
 #include "flags.h"
 #include "directions.h"
-#include "inputParams.h"
 
 using namespace lbm;
 
-void writeOutput(V_Field& velField,D_Field& densField,Flags& flagField,Input& inp,uint tStep) 
-{
-
-   ofstream file; 
-   string s;
-   ostringstream outStream;
-   outStream << tStep;
-   s = outStream.str();
-   file.open((inp.vtk_file + s +".vtk").c_str(), ios::out);
-   if(!(file.is_open()))
-   { 
-      cerr << "Failed to open " << (inp.vtk_file + s +".vtk") << " for writing" << endl;
-      //exit(EXIT_FAILURE);
-      return;
-   }
-   file << "# vtk DataFile Version 4.0" << endl;
-   file << "SiWiRVisFile" << endl;
-   file << "ASCII" << endl;
-   file << "DATASET STRUCTURED_POINTS" << endl;
-   file << "DIMENSIONS " << inp.sizex << " " << inp.sizey << " 1" << endl;
-   file << "ORIGIN 0 0 0" << endl;
-   file << "SPACING 1 1 1" << endl;
-   file << "POINT_DATA "<< inp.sizex*inp.sizey << endl << endl;
-
-
-   file << "SCALARS flags unsigned_int 1" << endl;
-   file << "LOOKUP_TABLE default" << endl;
-   for (uint y=1; y < inp.sizey+1; y++)
-   {
-      for (uint x=1; x < inp.sizex+1; x++)
-      {
-	 file << flagField(x,y) << endl;
-      }
-   }
-   file << endl;
-
-
-   file << "SCALARS density double 1" << endl;
-   file << "LOOKUP_TABLE default" << endl;
-   for (uint y=1; y < inp.sizey+1; y++)
-   {
-      for (uint x=1; x < inp.sizex+1; x++)
-      {
-	 file << densField(x,y) << endl;
-      }
-   }
-   file << endl;
-
-   file << "VECTORS velocity double" << endl;
-   for (uint y=1; y < inp.sizey+1; y++)
-   {
-      for (uint x=1; x < inp.sizex+1; x++)
-      {
-	 file << velField(x,y,X) << " " << velField(x,y,Y) << " 0" << endl;
-      }
-   }
-   file << endl;
-
-   file.close();
-}
-
 int main(int argc, char* argv[])
 {
-   if (argc != 1/*2*/) {
+   if (argc != 2) {
       cerr<<"error: wrong number of arguments"<<endl;
       cout<<"call ./lbm params.dat "<<endl;
       exit(EXIT_FAILURE);
@@ -78,6 +18,9 @@ int main(int argc, char* argv[])
    double uw[]={0.08,0.}; //x and y
 
    Input inp;
+   FileReader reader;
+   reader.readParameters(argv[1]); 
+
    /*
       if (!readInputParams(argv[1],&inp))
       {

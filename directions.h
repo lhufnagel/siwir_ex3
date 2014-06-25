@@ -1,3 +1,5 @@
+#pragma once
+
 //2q9 it is
 static const unsigned int stencilSize = 9;
 
@@ -23,6 +25,6 @@ static const double weigths[stencilSize] =
 //   C      N     NE    E      SE      S      SW      W      NW
   {4./9.,1./9.,1./36.,1./9., 1./36., 1./9., 1./36., 1./9., 1./36.};
 
-//dont touch
+//Directions for velocity-vector
 #define X 0
 #define Y 1
