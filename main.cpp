@@ -1,7 +1,6 @@
 #include "main.h"
 #include "grid.h"
 #include "io.h"
-#include "inputParams.h"
 #include "flags.h"
 #include "directions.h"
 
@@ -17,62 +16,76 @@ int main(int argc, char* argv[])
 
    double uw[]={0.08,0.}; //x and y
 
-   Input inp;
    FileReader reader;
    reader.readParameters(argv[1]); 
+   uint sizex = reader.getParameter<uint>("sizex");
+   uint sizey = reader.getParameter<uint>("sizey");
+   uint timesteps = reader.getParameter<uint>("timesteps");
+   assert(timesteps!=0);
+   if (timesteps > 100000) cerr << "Attention: Calculating many timesteps (100000+). Expect Latency" << endl;
+   double omega = reader.getParameter<double>("omega");
+   if (omega < 0.5 || omega > 1.95) cerr << "Attention: omega not in range of stable simulation (0.5-1.95)" << endl;
 
-   /*
-      if (!readInputParams(argv[1],&inp))
-      {
-      cerr << "Failed to open input-file" << endl;
-      exit(EXIT_FAILURE);
-      }
-      */
+   string vtk_file = reader.getParameter<string>("vtk_file");
+   assert(!vtk_file.empty());
+   uint vtk_step = reader.getParameter<uint>("vtk_step");
+   if (0==vtk_step) cerr << "Attention: not writing vtk-output" << endl;
+
+   string geometry = reader.getParameter<string>("geometry");
 
 
-   pgm_init(&argc,argv);
-   int rows, cols;
-   gray** refrVals = NULL;
-   gray maxValref = 255;
-   int format;
-
-   FILE* refrFile;
-   if ((refrFile = fopen("./test.pgm","r")) == NULL)
+   gray** geomVals = NULL;
+   gray maxVal = 255;
+   if (!geometry.empty())
    {
-      cerr << "fopen(): " << argv[3] << endl;
-      return EXIT_FAILURE;
+      pgm_init(&argc,argv);
+      int rows, cols;
+      int format;
+
+      FILE* geomFile;
+      if ((geomFile = fopen(geometry.c_str(),"r")) == NULL)
+      {
+	 cerr << "Failed to open geometry file " << geometry << endl;
+	 return EXIT_FAILURE;
+      }
+
+      pgm_readpgminit(geomFile,&cols,&rows,&maxVal,&format);
+
+      geomVals = pgm_allocarray( cols,  rows );
+
+      //PGMs horizontal gespiegelt einlesen, 
+      //damit wir unseren koordinatenursprung unten links (statt oben rehchts)  haben
+      for (int y=rows-1;y>=0;y--){
+	 pgm_readpgmrow( geomFile, geomVals[y], cols, maxVal, format );
+      }
+
+      sizex = cols;
+      sizey = rows;
    }
 
-   pgm_readpgminit(refrFile,&cols,&rows,&maxValref,&format);
+   assert(sizex < 1000 && sizey < 1000);
 
-   refrVals = pgm_allocarray( cols,  rows );
-
-   //PGMs horizontal gespiegelt einlesen, damit wir unseren koordinatenursprung unten links (statt oben rehchts)  haben
-   for (int y=rows-1;y>=0;y--){
-      pgm_readpgmrow( refrFile, refrVals[y], cols, maxValref, format );
-   }
-   inp.sizex = cols;
-   inp.sizey = rows;
-
-   PDF_Field src(inp.sizex+2,inp.sizey+2),
-	     dst(inp.sizex+2,inp.sizey+2);
-   V_Field velField(inp.sizex+2,inp.sizey+2);
-   D_Field densField(inp.sizex+2,inp.sizey+2); //macroscopic
-   Flags flagField(inp.sizex+2,inp.sizey+2); //info about wether boundary or fluid cell
+   PDF_Field src(sizex+2,sizey+2),
+	     dst(sizex+2,sizey+2);
+   V_Field velField(sizex+2,sizey+2);
+   D_Field densField(sizex+2,sizey+2); //macroscopic
+   Flags flagField(sizex+2,sizey+2); //info about wether boundary or fluid cell
    uint cellCount(0); //for MLUP calculation
+   uint writeIndex(0);
 
 
    //initialize fields
    //todo probably put this in function
-   for (uint x=0; x < inp.sizex+2; x++)
+   for (uint x=0; x < sizex+2; x++)
    {
-      for (uint y=0; y < inp.sizey+2; y++)
+      for (uint y=0; y < sizey+2; y++)
       {
 	 flagField(x,y)= NOSLIP;
 
 	 if (x>0 && y>0 &&
-	       x<inp.sizex+1 && y<inp.sizey+1 &&
-	       refrVals[y-1][x-1] == maxValref)
+	       x<sizex+1 && y<sizey+1 &&
+	       (geomVals == NULL ||
+	       geomVals[y-1][x-1] == maxVal))
 	 {
 	    flagField(x,y)= FLUID;
 
@@ -89,14 +102,14 @@ int main(int argc, char* argv[])
    }
 
    //initialize boundary field
-   for (uint y=1; y < inp.sizey+1; y++)
+   for (uint y=1; y < sizey+1; y++)
    {
-      flagField(0,y)=flagField(inp.sizex+1,y)=NOSLIP;
+      flagField(0,y)=flagField(sizex+1,y)=NOSLIP;
    }
-   for (uint x=0; x < inp.sizex+2; x++)
+   for (uint x=0; x < sizex+2; x++)
    {
       flagField(x,0)=NOSLIP;
-      flagField(x,inp.sizey+1)=MOVNOSLIP;
+      flagField(x,sizey+1)=MOVNOSLIP;
    }
 
     // time measurements
@@ -105,13 +118,13 @@ int main(int argc, char* argv[])
     gettimeofday(&start, NULL); 
 
 //Start lbm here
-   for (uint tStep = 0; tStep<inp.timesteps; ++tStep)
+   for (uint tStep = 0; tStep < /* or <= ? */ timesteps; ++tStep)
    {
       //Streaming
 #pragma omp parallel for
-      for (uint x=0; x < inp.sizex+2; x++)
+      for (uint x=0; x < sizex+2; x++)
       {
-	 for (uint y=0; y < inp.sizey+2; y++)
+	 for (uint y=0; y < sizey+2; y++)
 	 {
 	    if (flagField(x,y) == FLUID)
 	    {
@@ -125,10 +138,10 @@ int main(int argc, char* argv[])
 
       //Boundary handling
 #pragma omp parallel for
-      for (uint x=0; x < inp.sizex+2; x++)
+      for (uint x=0; x < sizex+2; x++)
       {
 
-	 for (uint y=0; y < inp.sizey+2; y++)
+	 for (uint y=0; y < sizey+2; y++)
 	 {
 	    if (flagField(x,y) == NOSLIP)
 	    {
@@ -136,8 +149,8 @@ int main(int argc, char* argv[])
 	       {
 
 		  if (
-			(x + stenNbs[X][i]) < (inp.sizex+2) && //dont have to check against x+stenNbs[i]>=0 bc unsigned int ;)
-			(y + stenNbs[Y][i]) < (inp.sizey+2) &&
+			(x + stenNbs[X][i]) < (sizex+2) && //dont have to check against x+stenNbs[i]>=0 because unsigned int ;)
+			(y + stenNbs[Y][i]) < (sizey+2) &&
 			(flagField(x + stenNbs[X][i], y + stenNbs[Y][i]) == FLUID))
 		  {
 		     dst(x + stenNbs[X][i], y + stenNbs[Y][i],i) = dst(x,y,(i+3)%8+1);
@@ -149,8 +162,8 @@ int main(int argc, char* argv[])
 	    {
 	       for (uint i=1;i<stencilSize;i++)
 	       {
-		  if (	(x + stenNbs[X][i])< (inp.sizex+2) &&
-			(y + stenNbs[Y][i])< (inp.sizey+2) &&
+		  if (	(x + stenNbs[X][i])< (sizex+2) &&
+			(y + stenNbs[Y][i])< (sizey+2) &&
 			(flagField(x + stenNbs[X][i], y + stenNbs[Y][i]) == FLUID))
 		  {
 		     dst(x + stenNbs[X][i], y + stenNbs[Y][i] ,i) = dst(x,y,(i+3)%8+1) - 6.*weigths[i]*(-stenNbs[X][i]*uw[X]-stenNbs[Y][i]*uw[Y]);
@@ -166,9 +179,9 @@ int main(int argc, char* argv[])
       
       //Colliding
 #pragma omp parallel for
-      for (uint x=1; x < inp.sizex+1; x++)
+      for (uint x=1; x < sizex+1; x++)
       {
-	 for (uint y=1; y < inp.sizey+1; y++)
+	 for (uint y=1; y < sizey+1; y++)
 	 {
 	    //calculate macroscopic measures here
 	    double rho=dst(x,y,C);
@@ -211,15 +224,15 @@ int main(int argc, char* argv[])
 	    for (uint i=0;i<stencilSize;i++)
 	    {
 	       double scalProd = stenNbs[X][i]*vx+stenNbs[Y][i]*vy;
-	       dst(x,y,i )-= inp.omega*(dst(x,y,i) - weigths[i]*(rho + 3.*(scalProd) + 9./2*scalProd*scalProd  -vsq)); 
+	       dst(x,y,i )-= omega*(dst(x,y,i) - weigths[i]*(rho + 3.*(scalProd) + 9./2*scalProd*scalProd  -vsq)); 
 	    }
 	 }
       }
 
       dst.swap(src);
 
-      if (inp.vtk_step!=0 &&  tStep!=0 && (tStep % inp.vtk_step)==0)
-	 writeOutput(velField,densField,flagField,inp,tStep);
+      if (vtk_step!=0 && tStep!=0 && (tStep % vtk_step)==0)
+      	 writeOutput(velField,densField,flagField,vtk_file, sizex, sizey, writeIndex++); 
    }
 
     gettimeofday(&end, NULL);
@@ -229,7 +242,7 @@ int main(int argc, char* argv[])
         useconds+=1000000;
         seconds--;
     }
-    double mlups = cellCount*inp.timesteps/(double(seconds+double(useconds/1000000.0))*1000000);
+    double mlups = cellCount*timesteps/(double(seconds+double(useconds/1000000.0))*1000000);
     cout<<"MLUps: "<< mlups <<endl;
 
    return EXIT_SUCCESS;

@@ -1,7 +1,7 @@
 CXX = g++
-CXXFLAGS ?= -O3 -ansi -Wall -pedantic -fopenmp#-pg  -O3 #-fopenmp -Winline
+CXXFLAGS ?= -O3 -ansi -Wall -pedantic -fopenmp 
 OBJECTS = io.o main.o 
-LIBS = -L. -lnetpbm
+LIBS = -lnetpbm 
 
 .PHONY: all clean
 
@@ -11,7 +11,6 @@ all: lbm
 %.o : %.cpp
 	${CXX} ${CXXFLAGS} -c $<
 
-#how to link
 lbm: ${OBJECTS}
 	${CXX} ${CXXFLAGS} -o $@ ${OBJECTS} ${LIBS}
 

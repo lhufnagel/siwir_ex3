@@ -1,0 +1,7 @@
+sizex 50
+sizey 50
+timesteps 10000
+omega 1.9
+vtk_file ldc
+vtk_step 100
+#geometry test.pgm
