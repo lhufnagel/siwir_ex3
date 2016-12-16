@@ -53,8 +53,8 @@ int main(int argc, char* argv[])
 
       geomVals = pgm_allocarray( cols,  rows );
 
-      //PGMs horizontal gespiegelt einlesen, 
-      //damit wir unseren koordinatenursprung unten links (statt oben rehchts)  haben
+      //Read PGMs horizontally mirrored
+      //-> coordinate origin in the bottom left
       for (int y=rows-1;y>=0;y--){
 	 pgm_readpgmrow( geomFile, geomVals[y], cols, maxVal, format );
       }

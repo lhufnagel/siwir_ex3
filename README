@@ -1,9 +1,0 @@
-SiWiR2 - Group 15 - Assignment 3
-Lina Gundelwein; 21671480; ol24azub
-Lorenz Hufnagel; 21612689; xo26lusy
-Tim Brendel; 21515135; ca61selu
-Michael Hildebrand; 21602600; mu23jyhu
-
-Use the Makefile to generate the lbm-Executable.
-Run it with the parameter-file params.dat
-Uncomment the geometry-line in the params-file to use the attached test.pgm file.
